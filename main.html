@@ -3,98 +3,81 @@
     <head>
         <meta charset='utf-8'/>
         <title>Torrent</title>
-        <meta charset='utf-8'/>
         <meta http-equiv="Access-Control-Allow-Origin" content="*">
-
     </head>
     <body>
-            <fieldset>
-                <legend>Torrent Client</legend>
-                <span for="file"><button id='add_file_btn'>Add file</button><input type='file' id='torrentf'/></span>
-                <div id="torrents_d">
-                    <ul id='torrents'>
-                    </div>
-                </div>
-            </fieldset>
-
+        <fieldset>
+            <legend>Torrent Client</legend>
+            <button id='add_file_btn'>Add file</button>
+            <input type='file' id='torrentf' style="display:none"/>
+            <div id="torrents_d">
+                <ul id='torrents'></ul>
+            </div>
+        </fieldset>
     </body>
     <script>
-        const torrents=document.getElementById('torrents');
-        const intervalId = setInterval(() => {
-            torrent_get().then((r)=> {
-                console.log(r['result']['torrents'])
-                torrents.innerHTML = "";
-                let t = r['result']['torrents'];
-                t.forEach((element, index, t) => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        ID: ${element.id} |
-                        Name: ${element.name} |
-                        Status: ${element.status} |
-                        Progress: ${element.percent_done}% |
-                        Download: ${element.rate_download} b/s |
-                        Upload: ${element.rate_upload} b/s |
-                        Size: ${element.total_size} bytes
-                    `;
-                    torrents.appendChild(li);
-
-                });
-            })
-        },1000);
-        // https://developer.mozilla.org/en-US/docs/Web/API/Request
-        let host='127.0.0.1';
+        let host = '127.0.0.1';
         let port = 9191;
         let t = 'mytorrents';
-        const client_link = () => {
-            return `http://${host}:${port}/${t}/rpc/`;
-        }
-        async function torrent_add(content, is_file=false)
-        {
-            let json = {
-                'method' : 'torrent-add',
-                'arguments': {'metainfo': btoa(content)}
+        const client_link = () => `http://${host}:${port}/${t}/rpc/`;
+
+        setInterval(async () => {
+            const r = await torrent_get();
+            if (!r || !r.result || !r.result.torrents) return;
+
+            const ul = document.getElementById('torrents');
+            ul.innerHTML = "";
+
+            r.result.torrents.forEach((el) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    ID: ${el.id} | Name: ${el.name || '---'} | Status: ${el.status} |
+                    Progress: ${el.percent_done}% | Down: ${el.rate_download} b/s |
+                    <button onclick="removeTorrent(${el.id})">❌</button>
+                `;
+                ul.appendChild(li);
+            });
+        }, 1000);
+
+        const fileInput = document.getElementById('torrentf');
+        document.getElementById('add_file_btn').onclick = () => fileInput.click();
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const b64 = btoa(String.fromCharCode(...new Uint8Array(reader.result)));
+                await torrent_add(b64);
+                fileInput.value = '';
             };
-            const req = JSON.stringify(json);
-            const r = await fetch(client_link(), {method: "POST", body: req, headers: {'Content-Type':'application/json'}}).then((r)=>{return r.json()});
-            return r
-        }
-        //const m = (method,arguments){} // nafig
-        const torrent_remove = async (id) => {
-                    const json = {
-                        'method': 'torrent-remove',
-                        'arguments': {
-                            'ids': [id],
-                            'delete-local-data': true
-                        }
-                    };
-            const req = JSON.stringify(json);
-            const r = await fetch(client_link(), {method: "POST", body: req, headers: {'Content-Type':'application/json'}}).then((r)=>{return r.json()});
-            return r;
+            reader.readAsArrayBuffer(file);
+        };
+
+        async function torrent_add(b64metainfo) {
+            const res = await fetch(client_link(), {
+                method: "POST",
+                body: JSON.stringify({ 'method': 'torrent-add', 'arguments': { 'metainfo': b64metainfo } }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            return res.json();
         }
 
-        const torrent_get = async () => {
-            const json = {
-                'method' : 'torrent-get',
-                'arguments': {"fields":["id", "name", "status", "rateDownload", "rateUpload", "totalSize", "percentDone"]}
-            };
-            const req = JSON.stringify(json);
-            const r = await fetch(client_link(), {method: "POST", body: req, headers: {'Content-Type':'application/json'}}).then((r)=>{return r.json()});
-            // torrent_get().then((r)=> {console.log(r['result']['torrents'])})
-            /*
-            0: Object { id: 1, name: "", status: 6, … }
-​​
-id: 1
-name: ""
-percent_done: 100
+        async function removeTorrent(id) {
+            await fetch(client_link(), {
+                method: "POST",
+                body: JSON.stringify({ 'method': 'torrent-remove', 'arguments': { 'ids': [id], 'delete-local-data': true } }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
-rate_download: 0
-rate_upload: 0
-status: 6
-total_size: 22847284
-​​
-<prototype>: Object { … }
-*/
-            return r;
+        async function torrent_get() {
+            const res = await fetch(client_link(), {
+                method: "POST",
+                body: JSON.stringify({ 'method': 'torrent-get', 'arguments': { "fields": ["id", "name", "status", "rateDownload", "rateUpload", "totalSize", "percentDone"] } }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            return res.json();
         }
     </script>
 </html>
