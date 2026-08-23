@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset='utf-8'/>
+        <title>Torrent</title>
+        <meta charset='utf-8'/>
+        <meta http-equiv="Access-Control-Allow-Origin" content="*">
+
+    </head>
+    <body>
+            <fieldset>
+                <legend>Torrent Client</legend>
+                <span for="file"><button id='add_file_btn'>Add file</button><input type='file' id='torrentf'/></span>
+            </fieldset>
+
+    </body>
+    <script>
+        // https://developer.mozilla.org/en-US/docs/Web/API/Request
+        let host='127.0.0.1';
+        let port = 9191;
+        let t = 'mytorrents';
+        const client_link = () => {
+            return `http://${host}:${port}/${t}/rpc/`;
+        }
+        function torrent_add(content, is_file=false)
+        {
+            let json = {
+                'method' : 'torrent-add',
+                'arguments': {'metainfo': btoa(content)}
+            };
+            const req = JSON.stringify(json);
+            const r = await fetch(client_link(), {method: "POST", body: req, headers: {'Content-Type':'application/json'}}).then((r)=>{return r.json()});
+            return r
+        }
+        //const m = (method,arguments){} // nafig
+        const torrent_remove = (id) => {
+                    const json = {
+                        'method': 'torrent-remove',
+                        'arguments': {
+                            'ids': [id],
+                            'delete-local-data': true
+                        }
+                    };
+            const req = JSON.stringify(json);
+            const r = await fetch(client_link(), {method: "POST", body: req, headers: {'Content-Type':'application/json'}}).then((r)=>{return r.json()});
+            return r;
+        }
+
+        const torrent_get = async () => {
+            const json = {
+                'method' : 'torrent-get',
+                'arguments': {"fields":["id", "name", "status", "rateDownload", "rateUpload", "totalSize", "percentDone"]}
+            };
+            const req = JSON.stringify(json);
+            const r = await fetch(client_link(), {method: "POST", body: req, headers: {'Content-Type':'application/json'}}).then((r)=>{return r.json()});
+            // torrent_get().then((r)=> {console.log(r['result']['torrents'])})
+            /*
+            0: Object { id: 1, name: "", status: 6, … }
+​​
+id: 1
+name: ""
+percent_done: 100
+
+rate_download: 0
+rate_upload: 0
+status: 6
+total_size: 22847284
+​​
+<prototype>: Object { … }
+*/
+            return r;
+        }
+    </script>
+</html>
