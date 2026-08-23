@@ -327,11 +327,12 @@
                     tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No active transfers</td></tr>';
                     return;
                 }
+                console.log(torrents)
 
                 tbody.innerHTML = "";
                 torrents.forEach((el) => {
-                    const percent = el.percentDone ? Math.round(el.percentDone * 100) : 0;
-                    const speed = formatBytes(el.rateDownload);
+                    const percent =Math.round(el.percent_done);
+                    const speed = formatBytes(el.rate_download);
                     const statusText = getStatusString(el.status);
                     const name = el.name || 'UNNAMED_METADATA';
 
