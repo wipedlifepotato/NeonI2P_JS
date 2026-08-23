@@ -11,10 +11,36 @@
             <fieldset>
                 <legend>Torrent Client</legend>
                 <span for="file"><button id='add_file_btn'>Add file</button><input type='file' id='torrentf'/></span>
+                <div id="torrents_d">
+                    <ul id='torrents'>
+                    </div>
+                </div>
             </fieldset>
 
     </body>
     <script>
+        const torrents=document.getElementById('torrents');
+        const intervalId = setInterval(() => {
+            torrent_get().then((r)=> {
+                console.log(r['result']['torrents'])
+                torrents.innerHTML = "";
+                let t = r['result']['torrents'];
+                t.forEach((element, index, t) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        ID: ${element.id} |
+                        Name: ${element.name} |
+                        Status: ${element.status} |
+                        Progress: ${element.percent_done}% |
+                        Download: ${element.rate_download} b/s |
+                        Upload: ${element.rate_upload} b/s |
+                        Size: ${element.total_size} bytes
+                    `;
+                    torrents.appendChild(li);
+
+                });
+            })
+        },1000);
         // https://developer.mozilla.org/en-US/docs/Web/API/Request
         let host='127.0.0.1';
         let port = 9191;
@@ -22,7 +48,7 @@
         const client_link = () => {
             return `http://${host}:${port}/${t}/rpc/`;
         }
-        function torrent_add(content, is_file=false)
+        async function torrent_add(content, is_file=false)
         {
             let json = {
                 'method' : 'torrent-add',
@@ -33,7 +59,7 @@
             return r
         }
         //const m = (method,arguments){} // nafig
-        const torrent_remove = (id) => {
+        const torrent_remove = async (id) => {
                     const json = {
                         'method': 'torrent-remove',
                         'arguments': {
