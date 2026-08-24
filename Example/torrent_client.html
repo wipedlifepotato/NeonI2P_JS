@@ -307,8 +307,8 @@
 
                 tbody.innerHTML = "";
                 torrents.forEach((el) => {
-                    const percent = Math.round(el.percent_done);
-                    const speed = window.tjs.formatBytes(el.rate_download);
+                    const percent = Math.round(el.percentDone);
+                    const speed = window.tjs.formatBytes(el.rateDownload);
                     const statusText = window.tjs.getStatusString(el.status);
                     const name = el.name || 'UNNAMED_METADATA';
 
